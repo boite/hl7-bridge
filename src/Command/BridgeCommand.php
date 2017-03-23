@@ -12,6 +12,8 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Yaml\Exception\ParseException;
+use Symfony\Component\Yaml\Yaml;
 
 use Linkorb\HL7\HTTP\HttpResponseHandlerFactory;
 use Linkorb\HL7\HTTP\HttpTransport;
@@ -20,10 +22,26 @@ use Linkorb\HL7\MLLP\MllpTransport;
 
 class BridgeCommand extends Command
 {
+    const CONFIG_DIRNAME = 'config';
+    const CONFIG_FILENAME = 'bridge.yml';
+
     const CONF_LISTEN_ADDR = '127.0.0.1';
     const CONF_LISTEN_PORT = 2575;
-    const CONF_DNS_HOST = '127.0.0.1';
-    const CONF_HTTP_ENDPOINT_URL = 'http://127.0.0.1:8910/';
+
+    private $configPath;
+    private $socket;
+    private $dnsAddress;
+    private $endpointUrl;
+
+    public function __construct($name, $rootPath)
+    {
+        $this->configPath = $rootPath
+            . DIRECTORY_SEPARATOR . self::CONFIG_DIRNAME
+            . DIRECTORY_SEPARATOR . self::CONFIG_FILENAME
+        ;
+
+        parent::__construct($name);
+    }
 
     protected function configure()
     {
@@ -31,7 +49,104 @@ class BridgeCommand extends Command
             ->setDescription(
                 'Accept connections from MLLP clients, forward their messages to an HTTP end point and relay the acknowledgments back to the MLLP clients.'
             )
+            ->addOption(
+                'configfile',
+                'c',
+                InputOption::VALUE_REQUIRED,
+                'Path to an alternative configuration file.'
+            )
+            ->addOption(
+                'listen_addr',
+                'l',
+                InputOption::VALUE_REQUIRED,
+                'IP Address of the network interface on which to listen.'
+            )
+            ->addOption(
+                'listen_port',
+                'p',
+                InputOption::VALUE_REQUIRED,
+                'TCP Port Number on which to listen.'
+            )
         ;
+    }
+
+    protected function initialize(InputInterface $input, OutputInterface $output)
+    {
+        $configPath = $this->configPath;
+        if ($input->getOption('configfile')) {
+            $configPath = $input->getOption('configfile');
+        }
+        if (!is_file($configPath)) {
+            $output->writeln(
+                sprintf(
+                    'Stop! The configuration file cannot be found at "%s".',
+                    $configPath
+                )
+            );
+            exit(1);
+        } elseif (!is_readable($configPath)) {
+            $output->writeln(
+                sprintf(
+                    'Stop! The configuration file cannot be read from "%s".',
+                    $configPath
+                )
+            );
+            exit(1);
+        }
+        if (false === ($configData = file_get_contents($configPath))) {
+            $output->writeln(
+                sprintf(
+                    'Stop! The configuration file cannot be read from "%s".',
+                    $configPath
+                )
+            );
+            exit(1);
+        }
+        try {
+            $config = Yaml::parse($configData);
+        } catch (ParseException $e) {
+            $output->writeln(
+                sprintf(
+                    'Stop! The configuration file does not seem to be valid: %s.',
+                    $e->getMessage()
+                )
+            );
+            exit(1);
+        }
+
+        if (!isset($config['dns_resolver_addr'])) {
+            $output->writeln(
+                'Stop! The configuration must include the IP address of a DNS resolver.'
+            );
+            exit(1);
+        } else {
+            $this->dnsAddress = $config['dns_resolver_addr'];
+        }
+
+        if (!isset($config['http_endpoint_url'])) {
+            $output->writeln(
+                'Stop! The configuration must include the HTTP endpoint URL.'
+            );
+            exit(1);
+        } else {
+            $this->endpointUrl = $config['http_endpoint_url'];
+        }
+
+        $sock = self::CONF_LISTEN_ADDR;
+        if ($input->getOption('listen_addr')) {
+            $sock = $input->getOption('listen_addr');
+        } elseif (isset($config['listen_addr'])) {
+            $sock = $config['listen_addr'];
+        }
+        $sock .= ':';
+        if ($input->getOption('listen_port')) {
+            $sock .= $input->getOption('listen_port');
+        } elseif (isset($config['listen_port'])) {
+            $sock .= $config['listen_port'];
+        } else {
+            $sock .= self::CONF_LISTEN_PORT;
+        }
+        $this->socket = $sock;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -39,7 +154,7 @@ class BridgeCommand extends Command
         $loop = EventLoopFac::create();
 
         $dnsResolverFactory = new DnsResolverFac();
-        $dnsResolver = $dnsResolverFactory->createCached(self::CONF_DNS_HOST, $loop);
+        $dnsResolver = $dnsResolverFactory->createCached($this->dnsAddress, $loop);
 
         $clientFactory = new HttpClientFac();
         $client = $clientFactory->create($loop, $dnsResolver);
@@ -47,14 +162,14 @@ class BridgeCommand extends Command
         $mmlpRequestHandler = new MllpRequestHandler();
 
         $httpTransporter = new HttpTransport(
-            self::CONF_HTTP_ENDPOINT_URL,
+            $this->endpointUrl,
             $client,
             new HttpResponseHandlerFactory(new MllpTransport)
         );
 
-        $socket = new Server(self::CONF_LISTEN_ADDR . ':' . self::CONF_LISTEN_PORT, $loop);
+        $server = new Server($this->socket, $loop);
 
-        $socket->on(
+        $server->on(
             'connection',
             function (ConnectionInterface $conn) use ($mmlpRequestHandler, $httpTransporter) {
                 $conn->on(
@@ -69,7 +184,11 @@ class BridgeCommand extends Command
             }
         );
 
-        echo '[BRIDGE] Listening on ' . self::CONF_LISTEN_ADDR . ':' . self::CONF_LISTEN_PORT . PHP_EOL;
+        $output->write(
+            '[BRIDGE] Listening on ' . $this->socket . PHP_EOL,
+            false,
+            OutputInterface::VERBOSITY_DEBUG
+        );
 
         $loop->run();
     }

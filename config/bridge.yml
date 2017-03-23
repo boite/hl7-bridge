@@ -1,0 +1,20 @@
+# dns_resolver_addr - Required - IP address of DNS resolver.
+#
+dns_resolver_addr: ~
+
+
+# http_endpoint_url - Required - URL of the HTTP Endpoint.
+#
+http_endpoint_url: ~
+
+
+# listen_addr - Optional - IP Address of the network interface on which to listen.
+#                          Can be given on the command line instead.
+#                          Default value: 127.0.0.1
+listen_addr: ~
+
+
+# listen_port - Optional - TCP Port Number on which to listen.
+#                          Can be given on the command line instead.
+#                          Default value: 2575
+listen_port: ~
