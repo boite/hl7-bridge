@@ -1,0 +1,25 @@
+#!/usr/bin/env php
+<?php
+
+$loader = __DIR__ . '/../vendor/autoload.php';
+if (!file_exists($loader)) {
+    die(
+        'You must set up the project dependencies, run the following commands:' . PHP_EOL .
+        'curl -s http://getcomposer.org/installer | php' . PHP_EOL .
+        'php composer.phar install' . PHP_EOL
+    );
+}
+$autoLoader = require($loader);
+
+
+use Linkorb\HL7\Command\BridgeCommand;
+use Symfony\Component\Console\Application;
+
+$name = pathinfo($argv[0], PATHINFO_FILENAME); // "bridge"
+
+$bridgeApp = new Application($name, '1.0.0');
+$bridgeApp->add(new BridgeCommand($name));
+$bridgeApp
+    ->setDefaultCommand($name, true) // Single command application
+    ->run()
+;
