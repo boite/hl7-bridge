@@ -1,5 +1,20 @@
 {
+    "name": "linkorb/hl7-bridge",
+    "license": "MIT",
+    "description": "Bridge MLLP and HTTP transports for HL7 messages.",
+    "authors": [
+        {
+            "name": "LinkORB",
+            "email": "engineering@linkorb.com",
+            "role": "Development"
+        }
+    ],
     "require": {
-        "react/react": "^0.4"
+        "react/http-client": "^0.4",
+        "react/socket": "^0.5"
+    },
+    "require-dev": {
+        "react/http": "^0.6",
+        "react/socket-client": "^0.5"
     }
 }

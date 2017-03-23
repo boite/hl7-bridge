@@ -8,11 +8,11 @@ use React\Http\Response;
 require __DIR__ . '/../vendor/autoload.php';
 
 $loop = Factory::create();
-$socket = new Server($loop);
+$socket = new Server('127.0.0.1:8910', $loop);
 
 $server = new \React\Http\Server($socket);
 $server->on('request', function (Request $request, Response $response) {
-    echo("[HTTP] got request.\n");
+    echo '[HTTP] got request.' . PHP_EOL;
     $response
         ->writeHead(
             200,
@@ -25,8 +25,6 @@ $server->on('request', function (Request $request, Response $response) {
     $response->end("|ACK|\r");
 });
 
-$socket->listen(8910, '127.0.0.1');
-
-echo 'Listening on ' . $socket->getPort() . PHP_EOL;
+echo '[HTTP] Listening on 127.0.0.1:8910' . PHP_EOL;
 
 $loop->run();
