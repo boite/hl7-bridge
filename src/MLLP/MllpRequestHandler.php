@@ -56,23 +56,24 @@ class MllpRequestHandler
     {
         $messages = [];
 
-        $process_ptr = 0; // pointer into buffer, advances to end of processed msgs
+        $process_ptr = 0; // pointer into buffer, advances with complete msgs
         $state = self::OUT;
 
-        $rchars = array_reverse(str_split($this->buffer)); // pop is quicker than unshift
-        $buflen = sizeof($rchars);
-        $message = []; // characters of current message
+        $buflen = strlen($this->buffer);
+        $message = ''; // characters of current message
 
         for ($i = 0; $i < $buflen; $i++) {
-            $c = array_pop($rchars);
+
+            $c = substr($this->buffer, $i, 1);
+
             if ($state == self::IN && (self::HEADER != $c && self::TRAILER != $c)) {
-                array_push($message, $c);
+                $message .= $c;
             } elseif ($state == self::IN && self::TRAILER == $c) {
                 $state = self::OUT;
-                if (!empty($message)) {
-                    $messages[] = implode($message);
+                if (strlen($message)) {
+                    $messages[] = $message;
                     $process_ptr = $i;
-                    $message = [];
+                    $message = '';
                 }
             } elseif ($state == self::OUT && self::HEADER == $c) {
                 $state = self::IN;
