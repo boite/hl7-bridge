@@ -63,37 +63,42 @@ class MllpRequestHandler
     {
         $messages = [];
 
+        $start_ptr = 0; // pointer into buffer, advances to position of message start
+        $end_ptr = 0;   // pointer into buffer, advances to position of message end
         $process_ptr = 0; // pointer into buffer, advances with complete/invalid msgs
         $state = self::OUT;
 
         $buflen = strlen($this->buffer);
-        $message = ''; // characters of current message
 
         for ($i = 0; $i < $buflen; $i++) {
 
-            $c = substr($this->buffer, $i, 1);
+            $c = $this->buffer[$i];
 
             if ($state == self::IN && (self::HEADER != $c && self::TRAILER != $c)) {
-                $message .= $c;
-                if (strlen($message) > self::MAX_MESSAGE_LEN) {
+                $end_ptr = $i;
+                if (self::MAX_MESSAGE_LEN < ($end_ptr - $start_ptr)) {
                     // encountered extra long message. so long message.
                     $state = self::OUT;
                     $process_ptr = $i;
-                    $message = '';
                 }
             } elseif ($state == self::IN && self::TRAILER == $c) {
-                $state = self::OUT;
-                if (strlen($message)) {
-                    $messages[] = $message;
-                    $process_ptr = $i;
-                    $message = '';
+                $len = $end_ptr - $start_ptr;
+                if ($len > 0) {
+                    array_push($messages, substr($this->buffer, 1 + $start_ptr, $len));
                 }
+                $state = self::OUT;
+                $process_ptr = $i;
             } elseif ($state == self::IN && self::HEADER == $c) {
                 // encountered abrupt end of message. au revoir message.
+                $start_ptr = $i;
+                $end_ptr = $i;
                 $process_ptr = $i-1;
-                $message = '';
             } elseif ($state == self::OUT && self::HEADER == $c) {
                 $state = self::IN;
+                $start_ptr = $i;
+                $end_ptr = $i;
+            } else {
+                $process_ptr = $i;
             }
         }
 
