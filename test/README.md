@@ -1,15 +1,21 @@
 # Manual Test
 
-- A dummy HTTP endpoint is provided `HttpEndpoint.php`. It simply responds to
-  any request with "`|ACK|\r`".
+Manual testing involves an HL7-like message type; a client to generate various
+length MLLP encapsulated messages and handle acknowledgements; and simulations
+of the forward transports (currently only HTTP is available).
 
-- MLLP encapsulated messages are generated and sent by `MllpClient.php`. The
-  messages, two tiny and one very large, are plain-text (not HL7).
+- A simulated HTTP endpoint is provided as `HttpEndpoint.php`.  It understands
+  the HL7-like messages and responds to valid requests with appropriate
+  acknowledgements.
 
-- A test `config.yml` is provided. It contains the end point url
-  `http://127.0.0.1:8910/` and the address of a dummy DNS resolver (which will
-  not be contacted during the test).
+- MLLP encapsulated messages are generated and sent by `MllpClient.php`. It
+  puts pseudo-random length messages on the wire once every second. It uses the
+  ACKs to verify that the messages are received fully and correctly.
 
+- A test `config.yml` is provided for `bin/bridge`.
+
+
+## Test Http Transport
 
 Start the endpoint:-
 
@@ -26,24 +32,18 @@ Start the bridge with the test config (and DEBUG):-
 Run the client to start the test:-
 
     $ php test/MllpClient.php
-    [MLLP] Client is starting. Press Ctrl C to stop.
-    [MLLP] Send Message.
-    [MLLP] Send Message.
-    [MLLP] Send Message.
-    [HTTP] got request.
-    [HTTP] got request.
-    [MLLP] Receive |ACK|
-    |ACK|
-    [HTTP] got request.
-    [MLLP] Receive |ACK|
+    [MLLP] Client (01) is starting. Press Ctrl C to stop.
+    [MLLP] Send Message |01|0001|... 196,616 bytes.
+    [HTTP] Got Request from Client 01 [mid: 0001].
+    [MLLP] Receive |ACK|01|0001|196616|
+    [MLLP] Send Message |01|0002|... 262,151 bytes.
+    [HTTP] Got Request from Client 01 [mid: 0002].
+    [MLLP] Receive |ACK|01|0002|262151|
     ^C
     $
 
+Multiple clients may be started:-
 
-Shut down:-
-
-    $ fg
-    ^C
-    $ fg
-    ^C
-    $
+    php test/MllpClient.php --help
+    Usage: test/MllpClient.php [clientID]
+    (where 0 < clientID < 100)

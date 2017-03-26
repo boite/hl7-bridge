@@ -12,6 +12,10 @@ point and relay the acknowledgments back to the MLLP clients.
     $ cd hl7-bridge
     $ php bin/bridge
 
+## Help
+
+    $ php bin/bridge --help
+
 ## Test
 
 Please refer to the [test/README](test/README.md).
