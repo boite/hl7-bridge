@@ -159,8 +159,6 @@ class BridgeCommand extends Command
         $clientFactory = new HttpClientFac();
         $client = $clientFactory->create($loop, $dnsResolver);
 
-        $mmlpRequestHandler = new MllpRequestHandler();
-
         $httpTransporter = new HttpTransport(
             $this->endpointUrl,
             $client,
@@ -171,7 +169,8 @@ class BridgeCommand extends Command
 
         $server->on(
             'connection',
-            function (ConnectionInterface $conn) use ($mmlpRequestHandler, $httpTransporter) {
+            function (ConnectionInterface $conn) use ($httpTransporter) {
+                $mmlpRequestHandler = new MllpRequestHandler();
                 $conn->on(
                     'data',
                     function($data, $conn) use ($mmlpRequestHandler, $httpTransporter) {
