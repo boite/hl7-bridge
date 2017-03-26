@@ -174,8 +174,7 @@ class BridgeCommand extends Command
                 $conn->on(
                     'data',
                     function($data, $conn) use ($mmlpRequestHandler, $httpTransporter) {
-                        $messages = $mmlpRequestHandler->handleMllpData($data);
-                        foreach ($messages as $message) {
+                        foreach ($mmlpRequestHandler->handleMllpData($data) as $message) {
                             $httpTransporter->forward($conn, $message);
                         }
                     }

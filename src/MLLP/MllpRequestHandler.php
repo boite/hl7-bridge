@@ -29,6 +29,12 @@ class MllpRequestHandler
     /**
      * Add data to the buffer and return messages parsed from MLLP packets.
      *
+     * This function works by advancing along the buffer and locating header and
+     * trailer characters.
+     *
+     * The buffer is emptied of those data corresponding to whole messages and
+     * extraneous characters, leaving the unprocessed data in the buffer.
+     *
      * @param string $data
      *
      * @return string[]
@@ -36,20 +42,7 @@ class MllpRequestHandler
     public function handleMllpData($data)
     {
         $this->buffer .= $data;
-        return $this->processBuffer();
-    }
 
-    /*
-     * This function extracts whole messages from MLLP data in the buffer.
-     *
-     * It works by advancing along the buffer and locating header and trailer
-     * characters.
-     *
-     * The buffer is emptied of those data corresponding to whole messages and
-     * extraneous characters, leaving the unprocessed data in the buffer.
-     */
-    private function processBuffer()
-    {
         $messages = [];
 
         $start_ptr = 0; // pointer into buffer, advances to header before message
