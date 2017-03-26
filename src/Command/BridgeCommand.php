@@ -183,9 +183,8 @@ class BridgeCommand extends Command
             }
         );
 
-        $output->write(
-            '[BRIDGE] Listening on ' . $this->socket . PHP_EOL,
-            false,
+        $output->writeln(
+            '[BRIDGE] Listening on ' . $this->socket,
             OutputInterface::VERBOSITY_DEBUG
         );
 
