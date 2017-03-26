@@ -182,6 +182,21 @@ class BridgeCommand extends Command
             }
         );
 
+        if ($output->isDebug()) {
+            $loop->addPeriodicTimer(
+                10,
+                function() use ($output) {
+                    $output->writeln(
+                        sprintf(
+                            '[BRIDGE] Real Memory: %s bytes; Used Memory: %s bytes.',
+                            number_format((float) memory_get_usage(true)),
+                            number_format((float) memory_get_usage())
+                        )
+                    );
+                }
+            );
+        }
+
         $output->writeln(
             '[BRIDGE] Listening on ' . $this->socket,
             OutputInterface::VERBOSITY_DEBUG
