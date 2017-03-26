@@ -24,16 +24,6 @@ class MllpRequestHandler
      */
     const TRAILER = "\x1C";
 
-    /**
-     * Parse state: inside an MLLP transported message.
-     */
-    const IN = 1;
-
-    /**
-     * Parse state: not inside an MLLP transported message.
-     */
-    const OUT = 0;
-
     private $buffer = '';
 
     /**
@@ -52,54 +42,54 @@ class MllpRequestHandler
     /*
      * This function extracts whole messages from MLLP data in the buffer.
      *
-     * It works by inspecting, in turn, each character in the buffer and updates
-     * a state machine to keep track of the mllp header and trailers that enclose
-     * messages.
+     * It works by advancing along the buffer and locating header and trailer
+     * characters.
      *
-     * The buffer is emptied of those data corresponding to whole messages,
-     * leaving the unprocessed data in the buffer.
+     * The buffer is emptied of those data corresponding to whole messages and
+     * extraneous characters, leaving the unprocessed data in the buffer.
      */
     private function processBuffer()
     {
         $messages = [];
 
-        $start_ptr = 0; // pointer into buffer, advances to position of message start
-        $end_ptr = 0;   // pointer into buffer, advances to position of message end
+        $start_ptr = 0; // pointer into buffer, advances to header before message
+        $end_ptr = 0;   // pointer into buffer, advances to trailer after message
         $process_ptr = 0; // pointer into buffer, advances with complete/invalid msgs
-        $state = self::OUT;
 
-        $buflen = strlen($this->buffer);
+        while (true) {
 
-        for ($i = 0; $i < $buflen; $i++) {
-
-            $c = $this->buffer[$i];
-
-            if ($state == self::IN && (self::HEADER != $c && self::TRAILER != $c)) {
-                $end_ptr = $i;
-                if (self::MAX_MESSAGE_LEN < ($end_ptr - $start_ptr)) {
-                    // encountered extra long message. so long message.
-                    $state = self::OUT;
-                    $process_ptr = $i;
-                }
-            } elseif ($state == self::IN && self::TRAILER == $c) {
-                $len = $end_ptr - $start_ptr;
-                if ($len > 0) {
-                    array_push($messages, substr($this->buffer, 1 + $start_ptr, $len));
-                }
-                $state = self::OUT;
-                $process_ptr = $i;
-            } elseif ($state == self::IN && self::HEADER == $c) {
-                // encountered abrupt end of message. au revoir message.
-                $start_ptr = $i;
-                $end_ptr = $i;
-                $process_ptr = $i-1;
-            } elseif ($state == self::OUT && self::HEADER == $c) {
-                $state = self::IN;
-                $start_ptr = $i;
-                $end_ptr = $i;
-            } else {
-                $process_ptr = $i;
+            $start_ptr = strpos($this->buffer, self::HEADER, $start_ptr);
+            if ($start_ptr === false) {
+                break;
             }
+            $process_ptr = $start_ptr;
+            $end_ptr = strpos($this->buffer, self::TRAILER, 1 + $start_ptr);
+            if ($end_ptr === false) {
+                break;
+            }
+
+            // messages might have been incorrectly terminated. drop them.
+            $sub_ptr = $start_ptr;
+            while (true) {
+                $sub_ptr = strpos($this->buffer, self::HEADER, 1 + $sub_ptr);
+                if ($sub_ptr === false || $end_ptr < $sub_ptr) {
+                    break; // no next header or next header is beyond trailer
+                } else {
+                    $start_ptr = $sub_ptr; // advance to next header
+                }
+            }
+            $process_ptr = $start_ptr;
+
+            $len = ($end_ptr - $start_ptr) - 1;
+            if ($len > self::MAX_MESSAGE_LEN) {
+                $process_ptr = $end_ptr;
+            } elseif ($len > 0) {
+                array_push($messages, substr($this->buffer, 1 + $start_ptr, $len));
+                $process_ptr = $end_ptr;
+            }
+
+            $start_ptr = 1 + $end_ptr;
+
         }
 
         if ($process_ptr) {
