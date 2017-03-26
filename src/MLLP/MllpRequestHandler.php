@@ -8,6 +8,13 @@ namespace Linkorb\HL7\MLLP;
 class MllpRequestHandler
 {
     /**
+     * Maximum permitted message length.
+     *
+     * @var integer
+     */
+    const MAX_MESSAGE_LEN = 2097152;
+
+    /**
      * MLLP Header
      */
     const HEADER = "\x0B";
@@ -56,7 +63,7 @@ class MllpRequestHandler
     {
         $messages = [];
 
-        $process_ptr = 0; // pointer into buffer, advances with complete msgs
+        $process_ptr = 0; // pointer into buffer, advances with complete/invalid msgs
         $state = self::OUT;
 
         $buflen = strlen($this->buffer);
@@ -68,6 +75,12 @@ class MllpRequestHandler
 
             if ($state == self::IN && (self::HEADER != $c && self::TRAILER != $c)) {
                 $message .= $c;
+                if (strlen($message) > self::MAX_MESSAGE_LEN) {
+                    // encountered extra long message. so long message.
+                    $state = self::OUT;
+                    $process_ptr = $i;
+                    $message = '';
+                }
             } elseif ($state == self::IN && self::TRAILER == $c) {
                 $state = self::OUT;
                 if (strlen($message)) {
@@ -75,6 +88,10 @@ class MllpRequestHandler
                     $process_ptr = $i;
                     $message = '';
                 }
+            } elseif ($state == self::IN && self::HEADER == $c) {
+                // encountered abrupt end of message. au revoir message.
+                $process_ptr = $i-1;
+                $message = '';
             } elseif ($state == self::OUT && self::HEADER == $c) {
                 $state = self::IN;
             }
