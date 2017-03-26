@@ -55,11 +55,13 @@ class HttpTransport
             ]
         );
 
-        $responseHandler = $this->httpResponseHandlerFactory->create();
-
         $request->on(
             'response',
-            function (Response $response) use ($conn, $responseHandler) {
+            function (Response $response) use ($conn) {
+                if (200 != $response->getCode()) {
+                    return;
+                }
+                $responseHandler = $this->httpResponseHandlerFactory->create();
                 $response->on(
                     'data',
                     function ($data) use ($responseHandler) {
