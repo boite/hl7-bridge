@@ -1,11 +1,8 @@
 <?php
 
-namespace Linkorb\HL7\Command;
+namespace LinkORB\HL7\Command;
 
-use React\Dns\Resolver\Factory as DnsResolverFac;
 use React\EventLoop\Factory as EventLoopFac;
-use React\HttpClient\Client;
-use React\HttpClient\Factory as HttpClientFac;
 use React\Socket\ConnectionInterface;
 use React\Socket\Server;
 use Symfony\Component\Console\Command\Command;
@@ -15,12 +12,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Yaml\Exception\ParseException;
 use Symfony\Component\Yaml\Yaml;
 
-use Linkorb\HL7\HTTP\HttpResponseHandlerFactory;
-use Linkorb\HL7\HTTP\HttpTransport;
-use Linkorb\HL7\MLLP\MllpRequestHandler;
-use Linkorb\HL7\MLLP\MllpTransport;
+use LinkORB\HL7\Bridge;
+use LinkORB\HL7\Transport\Mllp\MllpRequestHandler;
 
-class BridgeCommand extends Command
+class BridgeCommand extends Command implements BridgeAwareInterface
 {
     const CONFIG_DIRNAME = 'config';
     const CONFIG_FILENAME = 'bridge.yml';
@@ -28,10 +23,12 @@ class BridgeCommand extends Command
     const CONF_LISTEN_ADDR = '127.0.0.1';
     const CONF_LISTEN_PORT = 2575;
 
+    const DEFAULT_TRANSPORT = 'http';
+
+    private $bridge;
     private $configPath;
     private $socket;
-    private $dnsAddress;
-    private $endpointUrl;
+    private $transportBuilder;
 
     public function __construct($name, $rootPath)
     {
@@ -41,6 +38,16 @@ class BridgeCommand extends Command
         ;
 
         parent::__construct($name);
+    }
+
+    public function setBridge(Bridge $bridge)
+    {
+        $this->bridge = $bridge;
+    }
+
+    public function getBridge()
+    {
+        return $this->bridge;
     }
 
     protected function configure()
@@ -66,6 +73,13 @@ class BridgeCommand extends Command
                 'p',
                 InputOption::VALUE_REQUIRED,
                 'TCP Port Number on which to listen.'
+            )
+            ->addOption(
+                'transport',
+                't',
+                InputOption::VALUE_REQUIRED,
+                'Use the named transport backend (e.g. http).',
+                self::DEFAULT_TRANSPORT
             )
         ;
     }
@@ -114,24 +128,6 @@ class BridgeCommand extends Command
             exit(1);
         }
 
-        if (!isset($config['dns_resolver_addr'])) {
-            $output->writeln(
-                'Stop! The configuration must include the IP address of a DNS resolver.'
-            );
-            exit(1);
-        } else {
-            $this->dnsAddress = $config['dns_resolver_addr'];
-        }
-
-        if (!isset($config['http_endpoint_url'])) {
-            $output->writeln(
-                'Stop! The configuration must include the HTTP endpoint URL.'
-            );
-            exit(1);
-        } else {
-            $this->endpointUrl = $config['http_endpoint_url'];
-        }
-
         $sock = self::CONF_LISTEN_ADDR;
         if ($input->getOption('listen_addr')) {
             $sock = $input->getOption('listen_addr');
@@ -147,35 +143,38 @@ class BridgeCommand extends Command
             $sock .= self::CONF_LISTEN_PORT;
         }
         $this->socket = $sock;
+
+        $transports = $this->getBridge()->getRegisteredTransports();
+        if (!array_key_exists($input->getOption('transport'), $transports)) {
+            $output->writeln(
+                sprintf(
+                    'Stop! The transport can be one of: %s.',
+                    implode(', ', array_keys($transports))
+                )
+            );
+            exit(1);
+        }
+        $this->transportBuilder = $transports[$input->getOption('transport')];
+        $this->transportBuilder->init($output, $config);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $loop = EventLoopFac::create();
 
-        $dnsResolverFactory = new DnsResolverFac();
-        $dnsResolver = $dnsResolverFactory->createCached($this->dnsAddress, $loop);
-
-        $clientFactory = new HttpClientFac();
-        $client = $clientFactory->create($loop, $dnsResolver);
-
-        $httpTransporter = new HttpTransport(
-            $this->endpointUrl,
-            $client,
-            new HttpResponseHandlerFactory(new MllpTransport)
-        );
+        $transport = $this->transportBuilder->build($loop);
 
         $server = new Server($this->socket, $loop);
 
         $server->on(
             'connection',
-            function (ConnectionInterface $conn) use ($httpTransporter) {
+            function (ConnectionInterface $conn) use ($transport) {
                 $mmlpRequestHandler = new MllpRequestHandler();
                 $conn->on(
                     'data',
-                    function($data, $conn) use ($mmlpRequestHandler, $httpTransporter) {
+                    function ($data, $conn) use ($mmlpRequestHandler, $transport) {
                         foreach ($mmlpRequestHandler->handleMllpData($data) as $message) {
-                            $httpTransporter->forward($conn, $message);
+                            $transport->forward($conn, $message);
                         }
                     }
                 );
@@ -185,7 +184,7 @@ class BridgeCommand extends Command
         if ($output->isDebug()) {
             $loop->addPeriodicTimer(
                 10,
-                function() use ($output) {
+                function () use ($output) {
                     $output->writeln(
                         sprintf(
                             '[BRIDGE] Real Memory: %s bytes; Used Memory: %s bytes.',

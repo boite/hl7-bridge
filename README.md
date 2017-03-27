@@ -1,7 +1,7 @@
 # HL7 Bridge
 
-Accept connections from MLLP clients, forward their messages to an HTTP end
-point and relay the acknowledgments back to the MLLP clients.
+Accept connections from MLLP clients, forward their messages over the selected
+transport and relay the acknowledgements back to the MLLP clients.
 
 ## Install
 

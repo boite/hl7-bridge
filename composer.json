@@ -17,7 +17,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Linkorb\\HL7\\": "src/"
+            "LinkORB\\HL7\\": "src/"
         }
     },
     "require-dev": {

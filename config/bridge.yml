@@ -1,9 +1,9 @@
-# dns_resolver_addr - Required - IP address of DNS resolver.
+# dns_resolver_addr - Required for http transport- IP address of DNS resolver.
 #
 dns_resolver_addr: ~
 
 
-# http_endpoint_url - Required - URL of the HTTP Endpoint.
+# http_endpoint_url - Required for http transport - URL of the HTTP Endpoint.
 #
 http_endpoint_url: ~
 

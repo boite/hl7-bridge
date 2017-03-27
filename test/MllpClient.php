@@ -20,7 +20,7 @@ if ($argc > 1 && (!is_numeric($argv[1]) || 0 > (int) $argv[1] || 99 < (int) $arg
 
 $mid = 0;
 $messages = []; // map of message ID to message length
-$mllp = new Linkorb\HL7\MLLP\MllpRequestHandler();
+$mllp = new LinkORB\HL7\Transport\Mllp\MllpRequestHandler();
 
 $loop = React\EventLoop\Factory::create();
 
@@ -33,7 +33,12 @@ $connector
     ->create(CONF_SERVER_HOST, CONF_SERVER_PORT)
     ->then(
         function (React\Stream\Stream $stream) use ($loop, $clientID, &$mid, &$messages, $mllp) {
-            $stream->on('error', function ($e, $s) { throw $e; });
+            $stream->on(
+                'error',
+                function ($e, $s) {
+                    throw $e;
+                }
+            );
             $stream->on(
                 'data',
                 function ($data, $stream) use ($clientID, $mllp, &$messages) {
@@ -63,7 +68,7 @@ $connector
             );
             $loop->addPeriodicTimer(
                 1,
-                function(React\EventLoop\Timer\Timer $timer) use ($loop, $stream, $clientID, &$mid, &$messages) {
+                function (React\EventLoop\Timer\Timer $timer) use ($loop, $stream, $clientID, &$mid, &$messages) {
 
                     if (sizeof($messages) > 60) {
                         echo '[MLLP] 60 Messages in flight. Stop sending.' . PHP_EOL;
@@ -88,7 +93,7 @@ $connector
             );
             $loop->addPeriodicTimer(
                 60,
-                function() use (&$messages) {
+                function () use (&$messages) {
                     echo '[MLLP] ' . sizeof($messages) . ' Messages in flight.' . PHP_EOL;
                 }
             );
@@ -99,4 +104,3 @@ $connector
 echo '[MLLP] Client (' . $clientID . ') is starting. Press Ctrl C to stop.' . PHP_EOL;
 
 $loop->run();
-

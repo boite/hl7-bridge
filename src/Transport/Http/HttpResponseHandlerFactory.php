@@ -1,8 +1,8 @@
 <?php
 
-namespace Linkorb\HL7\HTTP;
+namespace LinkORB\HL7\Transport\Http;
 
-use Linkorb\HL7\MLLP\MllpTransport;
+use LinkORB\HL7\Transport\Mllp\MllpTransport;
 
 /**
  * Factory to create HttpResponseHandler instances, complete with the required
@@ -11,7 +11,7 @@ use Linkorb\HL7\MLLP\MllpTransport;
 class HttpResponseHandlerFactory
 {
     /**
-     * @var \Linkorb\HL7\MLLP\MllpTransport
+     * @var \LinkORB\HL7\Transport\Mllp\MllpTransport
      */
     private $mllpTransport;
 

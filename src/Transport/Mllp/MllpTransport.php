@@ -1,6 +1,6 @@
 <?php
 
-namespace Linkorb\HL7\MLLP;
+namespace LinkORB\HL7\Transport\Mllp;
 
 use React\Socket\ConnectionInterface;
 
@@ -25,8 +25,9 @@ class MllpTransport
     /**
      * Return an ACK along the MLLP transport.
      *
-     * @param ConnectionInterface $conn
+     * @param \React\Socket\ConnectionInterface $conn
      * @param string $message
+     * @return void
      */
     public function acknowledge(ConnectionInterface $conn, $message)
     {

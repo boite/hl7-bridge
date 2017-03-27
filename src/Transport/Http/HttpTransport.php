@@ -1,15 +1,17 @@
 <?php
 
-namespace Linkorb\HL7\HTTP;
+namespace LinkORB\HL7\Transport\Http;
 
 use React\HttpClient\Client;
 use React\HttpClient\Response;
 use React\Socket\ConnectionInterface;
 
+use LinkORB\HL7\Transport\TransportForwardInterface;
+
 /**
  * Forward messages to an HTTP endpoint.
  */
-class HttpTransport
+class HttpTransport implements TransportForwardInterface
 {
     /**
      * @var \React\HttpClient\Client
@@ -17,7 +19,7 @@ class HttpTransport
     private $client;
 
     /**
-     * @var \Linkorb\HL7\HTTP\HttpResponseHandlerFactory
+     * @var \LinkORB\HL7\Transport\Http\HttpResponseHandlerFactory
      */
     private $httpResponseHandlerFactory;
 

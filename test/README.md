@@ -23,9 +23,10 @@ Start the endpoint:-
     [HTTP] Listening on 127.0.0.1:8910
 
 
-Start the bridge with the test config (and DEBUG):-
+Start the bridge with the `http` transport and using the test config (and
+DEBUG):-
 
-    $ php bin/bridge -vvv -c test/config.yml &
+    $ php bin/bridge -vvv -c test/config.yml -t http &
     [BRIDGE] Listening on 127.0.0.1:2575
 
 

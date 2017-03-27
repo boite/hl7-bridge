@@ -1,6 +1,6 @@
 <?php
 
-namespace Linkorb\HL7\MLLP;
+namespace LinkORB\HL7\Transport\Mllp;
 
 /**
  * Handle MLLP data from connected clients.
@@ -48,7 +48,6 @@ class MllpRequestHandler
         $process_ptr = 0; // pointer into buffer, advances with complete/invalid msgs
 
         while (true) {
-
             $start_ptr = strpos($this->buffer, self::HEADER, $start_ptr);
             if ($start_ptr === false) {
                 break;
@@ -80,7 +79,6 @@ class MllpRequestHandler
             }
 
             $start_ptr = 1 + $end_ptr;
-
         }
 
         if ($process_ptr) {
