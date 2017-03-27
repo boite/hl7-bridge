@@ -8,6 +8,11 @@ dns_resolver_addr: ~
 http_endpoint_url: ~
 
 
+# process_commandline - Required for process transport - Process Command Line
+#
+process_commandline: ~
+
+
 # listen_addr - Optional - IP Address of the network interface on which to listen.
 #                          Can be given on the command line instead.
 #                          Default value: 127.0.0.1

@@ -23,7 +23,7 @@ class BridgeCommand extends Command implements BridgeAwareInterface
     const CONF_LISTEN_ADDR = '127.0.0.1';
     const CONF_LISTEN_PORT = 2575;
 
-    const DEFAULT_TRANSPORT = 'http';
+    const DEFAULT_TRANSPORT = 'process';
 
     private $bridge;
     private $configPath;
@@ -54,7 +54,7 @@ class BridgeCommand extends Command implements BridgeAwareInterface
     {
         $this
             ->setDescription(
-                'Accept connections from MLLP clients, forward their messages to an HTTP end point and relay the acknowledgments back to the MLLP clients.'
+                'Accept connections from MLLP clients, forward their messages over the selected transport and relay the acknowledgments back to the MLLP clients.'
             )
             ->addOption(
                 'configfile',
@@ -78,7 +78,7 @@ class BridgeCommand extends Command implements BridgeAwareInterface
                 'transport',
                 't',
                 InputOption::VALUE_REQUIRED,
-                'Use the named transport backend (e.g. http).',
+                'Use the named transport backend (e.g. http, process).',
                 self::DEFAULT_TRANSPORT
             )
         ;

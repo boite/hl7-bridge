@@ -15,12 +15,14 @@ $autoLoader = require($loader);
 use LinkORB\HL7\Bridge;
 use LinkORB\HL7\Command\BridgeCommand;
 use LinkORB\HL7\Transport\Http\HttpTransportBuilder;
+use LinkORB\HL7\Transport\Process\ProcessTransportBuilder;
 use Symfony\Component\Console\Application;
 
 $name = pathinfo($argv[0], PATHINFO_FILENAME); // "bridge"
 
 $bridgeApp = new Bridge(new Application($name, '1.0.0'));
 $bridgeApp->registerTransport(new HttpTransportBuilder);
+$bridgeApp->registerTransport(new ProcessTransportBuilder);
 $bridgeApp->add(new BridgeCommand($name, dirname(__DIR__)));
 $bridgeApp
     ->setDefaultCommand($name, true) // Single command application
