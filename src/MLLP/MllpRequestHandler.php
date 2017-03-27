@@ -43,8 +43,6 @@ class MllpRequestHandler
     {
         $this->buffer .= $data;
 
-        $messages = [];
-
         $start_ptr = 0; // pointer into buffer, advances to header before message
         $end_ptr = 0;   // pointer into buffer, advances to trailer after message
         $process_ptr = 0; // pointer into buffer, advances with complete/invalid msgs
@@ -77,7 +75,7 @@ class MllpRequestHandler
             if ($len > self::MAX_MESSAGE_LEN) {
                 $process_ptr = $end_ptr;
             } elseif ($len > 0) {
-                array_push($messages, substr($this->buffer, 1 + $start_ptr, $len));
+                yield substr($this->buffer, 1 + $start_ptr, $len);
                 $process_ptr = $end_ptr;
             }
 
@@ -88,7 +86,5 @@ class MllpRequestHandler
         if ($process_ptr) {
             $this->buffer = substr($this->buffer, $process_ptr);
         }
-
-        return $messages;
     }
 }
