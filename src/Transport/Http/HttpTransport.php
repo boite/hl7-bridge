@@ -60,7 +60,13 @@ class HttpTransport implements TransportForwardInterface
         $request->on(
             'response',
             function (Response $response) use ($conn) {
-                if (200 != $response->getCode()) {
+                if ($response->getCode() != 200 && $response->getCode() != 400) {
+                    return;
+                }
+                if (!array_key_exists('Content-Type', $response->getHeaders())) {
+                    return;
+                }
+                if ($response->getHeaders()['Content-Type'] != 'x-application/hl7-v2+er7') {
                     return;
                 }
                 $responseHandler = $this->httpResponseHandlerFactory->create();
