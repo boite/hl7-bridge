@@ -33,6 +33,6 @@ class MllpTransport
     {
         $conn->pause();
         $conn->write(sprintf("%s%s%s\r", self::HEADER, $message, self::TRAILER));
-        $conn->resume();
+        $conn->end();
     }
 }
