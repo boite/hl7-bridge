@@ -2,6 +2,8 @@
 
 namespace LinkORB\HL7\Transport\Process;
 
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use React\EventLoop\LoopInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -11,9 +13,11 @@ use LinkORB\HL7\Transport\Process\ProcessResponseHandlerFactory;
 use LinkORB\HL7\Transport\Process\ProcessTransport;
 use LinkORB\HL7\Transport\TransportBuilderInterface;
 
-class ProcessTransportBuilder implements TransportBuilderInterface
+class ProcessTransportBuilder implements TransportBuilderInterface, LoggerAwareInterface
 {
     const NAME = 'process';
+
+    use LoggerAwareTrait;
 
     private $processCmd;
 
@@ -38,7 +42,8 @@ class ProcessTransportBuilder implements TransportBuilderInterface
     {
         return new ProcessTransport(
             new ProcessFactory($loop, $this->processCmd),
-            new ProcessResponseHandlerFactory(new MllpTransport)
+            new ProcessResponseHandlerFactory(new MllpTransport($this->logger)),
+            $this->logger
         );
     }
 }

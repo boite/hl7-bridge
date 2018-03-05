@@ -23,3 +23,8 @@ listen_addr: ~
 #                          Can be given on the command line instead.
 #                          Default value: 2575
 listen_port: ~
+
+# logfile - Optional - Path to which to write a debug log file.
+#                      Can be given on the command line instead.
+#                      Default value: null (no logging)
+logfile: ~

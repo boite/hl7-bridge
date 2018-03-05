@@ -2,6 +2,7 @@
 
 namespace LinkORB\HL7\Transport\Process;
 
+use Psr\Log\LoggerInterface;
 use React\Socket\ConnectionInterface;
 
 use LinkORB\HL7\Transport\TransportForwardInterface;
@@ -11,6 +12,11 @@ use LinkORB\HL7\Transport\TransportForwardInterface;
  */
 class ProcessTransport implements TransportForwardInterface
 {
+    /**
+     * @var \Psr\Log\LoggerInterface
+     */
+    private $logger;
+
     /**
      * @var \LinkORB\HL7\Transport\Process\ProcessFactory
      */
@@ -24,14 +30,17 @@ class ProcessTransport implements TransportForwardInterface
     /**
      * @param ProcessFactory $processFactory
      * @param ProcessResponseHandlerFactory $processResponseHandlerFactory
+     * @param LoggerInterface $logger
      * @return void
      */
     public function __construct(
         ProcessFactory $processFactory,
-        ProcessResponseHandlerFactory $processResponseHandlerFactory
+        ProcessResponseHandlerFactory $processResponseHandlerFactory,
+        LoggerInterface $logger
     ) {
         $this->processFactory = $processFactory;
         $this->processResponseHandlerFactory = $processResponseHandlerFactory;
+        $this->logger = $logger;
     }
 
     /**
@@ -43,6 +52,9 @@ class ProcessTransport implements TransportForwardInterface
      */
     public function forward(ConnectionInterface $conn, $message)
     {
+        $messageSize = strlen($message);
+        $this->logger->debug("Forward HL7 message of {$messageSize} bytes.");
+
         $responseHandler = $this->processResponseHandlerFactory->create();
         $process = $this->processFactory->create();
 

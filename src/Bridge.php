@@ -2,6 +2,8 @@
 
 namespace LinkORB\HL7;
 
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 
@@ -11,11 +13,13 @@ use LinkORB\HL7\Transport\TransportBuilderInterface;
 class Bridge
 {
     private $app;
+    private $logger;
     private $registeredTransports = [];
 
-    public function __construct(Application $app)
+    public function __construct(Application $app, LoggerInterface $logger)
     {
         $this->app = $app;
+        $this->logger = $logger;
     }
 
     public function __call($method, $args)
@@ -61,6 +65,17 @@ class Bridge
      */
     public function registerTransport(TransportBuilderInterface $transportBuilder)
     {
+        if ($transportBuilder instanceof LoggerAwareInterface) {
+            $transportBuilder->setLogger($this->logger);
+        }
         $this->registeredTransports[$transportBuilder->getName()] = $transportBuilder;
+    }
+
+    /**
+     * @return \Psr\Log\LoggerInterface
+     */
+    public function getLogger()
+    {
+        return $this->logger;
     }
 }

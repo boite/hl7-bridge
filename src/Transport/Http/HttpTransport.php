@@ -2,6 +2,7 @@
 
 namespace LinkORB\HL7\Transport\Http;
 
+use Psr\Log\LoggerInterface;
 use React\HttpClient\Client;
 use React\HttpClient\Response;
 use React\Socket\ConnectionInterface;
@@ -23,21 +24,29 @@ class HttpTransport implements TransportForwardInterface
      */
     private $httpResponseHandlerFactory;
 
+    /**
+     * @var \Psr\Log\LoggerInterface
+     */
+    private $logger;
+
     private $url;
 
     /**
      * @param string $url URL of the HTTP endpoint.
      * @param Client $client An HTTP client.
      * @param HttpResponseHandlerFactory $httpResponseHandlerFactory
+     * @param LoggerInterface $logger
      */
     public function __construct(
         $url,
         Client $client,
-        HttpResponseHandlerFactory $httpResponseHandlerFactory
+        HttpResponseHandlerFactory $httpResponseHandlerFactory,
+        LoggerInterface $logger
     ) {
-            $this->url = $url;
-            $this->client = $client;
-            $this->httpResponseHandlerFactory = $httpResponseHandlerFactory;
+        $this->url = $url;
+        $this->client = $client;
+        $this->httpResponseHandlerFactory = $httpResponseHandlerFactory;
+        $this->logger = $logger;
     }
 
     /**
@@ -48,6 +57,9 @@ class HttpTransport implements TransportForwardInterface
      */
     public function forward(ConnectionInterface $conn, $message)
     {
+        $messageSize = strlen($message);
+        $this->logger->debug("Forward HL7 message of {$messageSize} bytes.");
+
         $request = $this->client->request(
             'POST',
             $this->url,

@@ -2,6 +2,8 @@
 
 namespace LinkORB\HL7\Transport\Http;
 
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use React\Dns\Resolver\Factory as DnsResolverFac;
 use React\EventLoop\LoopInterface;
 use React\HttpClient\Client;
@@ -13,9 +15,11 @@ use LinkORB\HL7\Transport\Http\HttpTransport;
 use LinkORB\HL7\Transport\Mllp\MllpTransport;
 use LinkORB\HL7\Transport\TransportBuilderInterface;
 
-class HttpTransportBuilder implements TransportBuilderInterface
+class HttpTransportBuilder implements TransportBuilderInterface, LoggerAwareInterface
 {
     const NAME = 'http';
+
+    use LoggerAwareTrait;
 
     private $dnsAddress;
     private $endpointUrl;
@@ -57,7 +61,8 @@ class HttpTransportBuilder implements TransportBuilderInterface
         return new HttpTransport(
             $this->endpointUrl,
             $client,
-            new HttpResponseHandlerFactory(new MllpTransport)
+            new HttpResponseHandlerFactory(new MllpTransport($this->logger)),
+            $this->logger
         );
     }
 }

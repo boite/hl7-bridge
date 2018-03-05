@@ -2,6 +2,9 @@
 
 namespace LinkORB\HL7\Command;
 
+use Monolog\Handler\NullHandler;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use React\EventLoop\Factory as EventLoopFac;
 use React\Socket\ConnectionInterface;
 use React\Socket\Server;
@@ -81,6 +84,12 @@ class BridgeCommand extends Command implements BridgeAwareInterface
                 'Use the named transport backend (e.g. http, process).',
                 self::DEFAULT_TRANSPORT
             )
+            ->addOption(
+                'logfile',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Path to which to write a debug log file.'
+            )
         ;
     }
 
@@ -143,6 +152,18 @@ class BridgeCommand extends Command implements BridgeAwareInterface
             $sock .= self::CONF_LISTEN_PORT;
         }
         $this->socket = $sock;
+
+        $logHandler = null;
+        $debugLog = $input->getOption('logfile');
+        if (!$debugLog && isset($config['logfile'])) {
+            $debugLog = $config['logfile'];
+        }
+        if ($debugLog) {
+            $logHandler = new StreamHandler($debugLog, Logger::DEBUG);
+        } else {
+            $logHandler = new NullHandler(Logger::DEBUG);
+        }
+        $this->getBridge()->getLogger()->pushHandler($logHandler);
 
         $transports = $this->getBridge()->getRegisteredTransports();
         if (!array_key_exists($input->getOption('transport'), $transports)) {
