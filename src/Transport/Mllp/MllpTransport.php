@@ -41,8 +41,6 @@ class MllpTransport
     {
         $messageSize = strlen($message);
         $this->logger->debug("Acknowledge MLLP frame with HL7 ACK of {$messageSize} bytes.");
-        $conn->pause();
         $conn->write(sprintf("%s%s%s\r", self::HEADER, $message, self::TRAILER));
-        $conn->end();
     }
 }
