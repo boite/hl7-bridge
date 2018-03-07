@@ -183,19 +183,19 @@ class BridgeCommand extends Command implements BridgeAwareInterface
     {
         $loop = EventLoopFac::create();
 
-        $transport = $this->transportBuilder->build($loop);
+        $forwardTransport = $this->transportBuilder->build($loop);
 
         $server = new Server($this->socket, $loop);
 
         $server->on(
             'connection',
-            function (ConnectionInterface $conn) use ($transport) {
+            function (ConnectionInterface $connFomClient) use ($forwardTransport) {
                 $mmlpRequestHandler = new MllpRequestHandler();
-                $conn->on(
+                $connFomClient->on(
                     'data',
-                    function ($data, $conn) use ($mmlpRequestHandler, $transport) {
+                    function ($data) use ($mmlpRequestHandler, $forwardTransport, $connFomClient) {
                         foreach ($mmlpRequestHandler->handleMllpData($data) as $message) {
-                            $transport->forward($conn, $message);
+                            $forwardTransport->forward($message, $connFomClient);
                         }
                     }
                 );

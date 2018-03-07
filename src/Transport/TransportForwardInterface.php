@@ -10,9 +10,10 @@ interface TransportForwardInterface
      * Forward the supplied message and return the response to the supplied
      * connection.
      *
-     * @param \React\Socket\ConnectionInterface $conn
      * @param string $message
+     * @param \React\Socket\ConnectionInterface $connFomMllpClient
+     *
      * @return void
      */
-    public function forward(ConnectionInterface $conn, $message);
+    public function forward($message, ConnectionInterface $connFomMllpClient);
 }

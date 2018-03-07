@@ -4,10 +4,8 @@ namespace LinkORB\HL7\Transport\Http;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use React\Dns\Resolver\Factory as DnsResolverFac;
 use React\EventLoop\LoopInterface;
 use React\HttpClient\Client;
-use React\HttpClient\Factory as HttpClientFac;
 use Symfony\Component\Console\Output\OutputInterface;
 
 use LinkORB\HL7\Transport\Http\HttpResponseHandlerFactory;
@@ -52,11 +50,7 @@ class HttpTransportBuilder implements TransportBuilderInterface, LoggerAwareInte
 
     public function build(LoopInterface $loop)
     {
-        $dnsResolverFactory = new DnsResolverFac();
-        $dnsResolver = $dnsResolverFactory->createCached($this->dnsAddress, $loop);
-
-        $clientFactory = new HttpClientFac();
-        $client = $clientFactory->create($loop, $dnsResolver);
+        $client = new Client($loop);
 
         return new HttpTransport(
             $this->endpointUrl,

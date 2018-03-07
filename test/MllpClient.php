@@ -1,12 +1,12 @@
 <?php
 
+use React\Socket\ConnectionInterface;
+
 require __DIR__.'/../vendor/autoload.php';
 
 const HEADER = "\x0B";
 const TRAILER = "\x1C";
-const CONF_SERVER_HOST = '127.0.0.1';
-const CONF_SERVER_PORT = 2575;
-const CONF_DNS_HOST = '127.0.0.1';
+const URI = 'tcp://127.0.0.1:2575';
 
 
 $clientID = '01';
@@ -24,26 +24,23 @@ $mllp = new LinkORB\HL7\Transport\Mllp\MllpRequestHandler();
 
 $loop = React\EventLoop\Factory::create();
 
-$dnsResolverFactory = new React\Dns\Resolver\Factory();
-$dns = $dnsResolverFactory->createCached(CONF_DNS_HOST, $loop);
-
-$connector = new React\SocketClient\Connector($loop, $dns);
+$connector = new React\Socket\Connector($loop);
 
 $connector
-    ->create(CONF_SERVER_HOST, CONF_SERVER_PORT)
+    ->connect(URI)
     ->then(
-        function (React\Stream\Stream $stream) use ($loop, $clientID, &$mid, &$messages, $mllp) {
+        function (ConnectionInterface $stream) use ($loop, $clientID, &$mid, &$messages, $mllp) {
             $stream->on(
                 'error',
-                function ($e, $s) {
+                function ($e) {
                     throw $e;
                 }
             );
             $stream->on(
                 'data',
-                function ($data, $stream) use ($clientID, $mllp, &$messages) {
-                    $responses = $mllp->handleMllpData($data);
-                    foreach ($responses as $m) {
+                function ($data) use ($clientID, $mllp, &$messages) {
+                    foreach ($mllp->handleMllpData($data) as $m) {
+                        echo $m . PHP_EOL;
                         $parts = explode('|', trim($m));
                         if (sizeof($parts) != 6) {
                             echo '[MLLP] Receive bogus response.' . PHP_EOL;

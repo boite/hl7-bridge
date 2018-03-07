@@ -46,11 +46,12 @@ class ProcessTransport implements TransportForwardInterface
     /**
      * Forward messages to a Process and set-up a handler for each response.
      *
-     * @param \React\Socket\ConnectionInterface $conn
      * @param string $message
+     * @param ConnectionInterface $connFomMllpClient
+     *
      * @return void
      */
-    public function forward(ConnectionInterface $conn, $message)
+    public function forward($message, ConnectionInterface $connFomMllpClient)
     {
         $messageSize = strlen($message);
         $this->logger->debug("Forward HL7 message of {$messageSize} bytes.");
@@ -60,17 +61,17 @@ class ProcessTransport implements TransportForwardInterface
 
         $process->stdout->on(
             'data',
-            function ($data, $stream) use ($responseHandler) {
+            function ($data) use ($responseHandler) {
                 $responseHandler->handleResponseData($data);
             }
         );
         $process->on(
             'exit',
-            function ($code, $foo) use ($conn, $responseHandler) {
+            function ($code) use ($connFomMllpClient, $responseHandler) {
                 if ($code !== 0) {
                     return;
                 }
-                $responseHandler->handleResponseCompletion($conn);
+                $responseHandler->handleResponseCompletion($connFomMllpClient);
             }
         );
 

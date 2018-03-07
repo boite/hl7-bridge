@@ -52,10 +52,12 @@ class HttpTransport implements TransportForwardInterface
     /**
      * Forward messages to an HTTP endpoint and set-up a handler for each response.
      *
-     * @param ConnectionInterface $conn
      * @param string $message
+     * @param ConnectionInterface $connFomMllpClient
+     *
+     * @return void
      */
-    public function forward(ConnectionInterface $conn, $message)
+    public function forward($message, ConnectionInterface $connFomMllpClient)
     {
         $messageSize = strlen($message);
         $this->logger->debug("Forward HL7 message of {$messageSize} bytes.");
@@ -71,7 +73,7 @@ class HttpTransport implements TransportForwardInterface
 
         $request->on(
             'response',
-            function (Response $response) use ($conn) {
+            function (Response $response) use ($connFomMllpClient) {
                 if ($response->getCode() != 200 && $response->getCode() != 400) {
                     return;
                 }
@@ -90,8 +92,8 @@ class HttpTransport implements TransportForwardInterface
                 );
                 $response->on(
                     'end',
-                    function () use ($conn, $responseHandler) {
-                        $responseHandler->handleResponseCompletion($conn);
+                    function () use ($connFomMllpClient, $responseHandler) {
+                        $responseHandler->handleResponseCompletion($connFomMllpClient);
                     }
                 );
             }
